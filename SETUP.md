@@ -66,13 +66,13 @@ In `.devcontainer/devcontainer.json`, add any language or framework extensions u
 
 ### 6. Ensure host directories exist
 
-The container bind-mounts several directories from the host. Make sure these exist before starting the container:
+Run the setup script from this repo once before starting the container for the first time:
 
 ```bash
-mkdir -p ~/.claude/skills ~/.claude/commands ~/.claude/projects ~/.claude/plugins
+./host-setup.sh
 ```
 
-`settings.json` and `.gitconfig` should already exist if Claude Code and git are configured on the host.
+This creates the required directories and files. The critical one is `~/.claude/settings.json` — if it doesn't exist as a *file* before Docker starts, Docker will create a *directory* with that name, causing Claude to fail silently. The script also detects and reports this if it's already happened.
 
 ## What the template provides
 
