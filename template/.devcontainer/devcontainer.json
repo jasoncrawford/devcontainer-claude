@@ -48,7 +48,6 @@
     "source=${localEnv:HOME}/.claude/commands,target=/home/node/.claude/commands,type=bind",
     "source=${localEnv:HOME}/.claude/settings.json,target=/home/node/.claude/settings.json,type=bind",
     "source=${localEnv:HOME}/.claude/projects,target=/home/node/.claude/projects,type=bind",
-    "source=${localEnv:HOME}/.claude/plugins,target=/home/node/.claude/plugins,type=bind",
     "source=${localEnv:HOME}/.gitconfig,target=/home/node/.gitconfig,type=bind,readonly",
     "source=${localEnv:HOME}/.claude,target=/home/node/.claude-host,type=bind,readonly"
   ],
@@ -61,6 +60,7 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
+  "postCreateCommand": "claude plugin install superpowers@claude-plugins-official",
   "postStartCommand": "cp -n /home/node/.claude-host/.claude.json /home/node/.claude/.claude.json 2>/dev/null; sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "postStartCommand"
 }
