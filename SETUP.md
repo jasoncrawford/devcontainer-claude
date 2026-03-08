@@ -77,7 +77,7 @@ This creates the required directories and files. The critical one is `~/.claude/
 ## What the template provides
 
 - **Firewall** (`init-firewall.sh`): Restricts outbound traffic to an allowlist using iptables/ipset. GitHub IP ranges are fetched dynamically; other domains are resolved at startup. Runs as root via a sudoers rule.
-- **Persistent state**: Claude's state (`.claude/`) is stored in a named Docker volume per project, so it survives container rebuilds.
+- **Persistent state**: Claude's state (`.claude/`) is stored in a named Docker volume per project, keyed to the devcontainer ID. It survives container restarts, but a rebuild (e.g. after changing `devcontainer.json`) generates a new ID and a new volume, orphaning the old one. To clean up orphaned volumes: `docker volume prune`.
 - **Shared config**: Skills, commands, settings, and projects are bind-mounted read-write from the host, so changes inside the container are reflected on the host and vice versa.
 - **Shell**: zsh with Powerlevel10k, fzf, and git plugins.
 - **Tools**: git, gh, jq, vim, nano, delta (git diff), and standard build tools.
