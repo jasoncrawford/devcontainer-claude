@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   gnupg2 \
   gh \
   iptables \
+  ip6tables \
   ipset \
   iproute2 \
   dnsutils \
