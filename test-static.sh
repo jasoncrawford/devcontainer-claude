@@ -47,6 +47,10 @@ echo ""
 echo "=== Shell script linting (shellcheck) ==="
 run "template/init-firewall.sh" \
     shellcheck template/.devcontainer/init-firewall.sh
+run "template/post-create.sh" \
+    shellcheck template/.devcontainer/post-create.sh
+run "template/post-start.sh" \
+    shellcheck template/.devcontainer/post-start.sh
 run "host-setup.sh" \
     shellcheck host-setup.sh
 run "test-static.sh" \
