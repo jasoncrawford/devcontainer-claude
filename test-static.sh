@@ -39,6 +39,14 @@ run "template/devcontainer.json is valid JSON" \
     jq empty template/.devcontainer/devcontainer.json
 
 echo ""
+echo "=== Script consistency ==="
+# Verify scripts referenced by devcontainer.json exist in the template.
+for script in post-create.sh post-start.sh; do
+    run "$script exists in template" \
+        test -f "template/.devcontainer/$script"
+done
+
+echo ""
 echo "=== Dockerfile linting (hadolint) ==="
 run "template/Dockerfile" \
     hadolint template/.devcontainer/Dockerfile

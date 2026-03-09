@@ -56,6 +56,63 @@ docker run -d \
     sleep 300
 
 exec_root() { docker exec --user root "$CONTAINER" "$@"; }
+exec_node() { docker exec --user node "$CONTAINER" "$@"; }
+
+# ── Script presence ───────────────────────────────────────────────────────────
+
+echo ""
+echo "=== Script presence ==="
+for script in init-firewall.sh post-create.sh post-start.sh; do
+    if exec_root test -x "/usr/local/bin/$script"; then
+        pass "$script is present and executable"
+    else
+        fail "$script is missing or not executable"
+    fi
+done
+
+# ── .claude.json seeding ──────────────────────────────────────────────────────
+
+echo ""
+echo "=== .claude.json seeding ==="
+
+exec_root mkdir -p /home/node/.claude-host /home/node/.claude
+exec_root chown -R node:node /home/node/.claude-host /home/node/.claude
+
+# Inline the seeding logic from post-create.sh so we can test it without
+# running the full script (plugin install requires Claude auth).
+seed() {
+    exec_node bash -c '
+        if [ -f /home/node/.claude-host/.claude.json ] && [ ! -f /home/node/.claude/.claude.json ]; then
+            cp /home/node/.claude-host/.claude.json /home/node/.claude/.claude.json
+        fi'
+}
+
+# Case 1: source exists, dest doesn't → should copy
+exec_node bash -c 'echo "{\"hasCompletedOnboarding\":true}" > /home/node/.claude-host/.claude.json'
+seed
+if exec_node jq -e '.hasCompletedOnboarding == true' /home/node/.claude/.claude.json &>/dev/null; then
+    pass "seeds .claude.json when source exists and dest does not"
+else
+    fail "failed to seed .claude.json from source"
+fi
+
+# Case 2: both exist → dest should NOT be overwritten (rebuild/restart case)
+exec_node bash -c 'echo "{\"hasCompletedOnboarding\":false}" > /home/node/.claude-host/.claude.json'
+seed
+if exec_node jq -e '.hasCompletedOnboarding == true' /home/node/.claude/.claude.json &>/dev/null; then
+    pass "preserves existing .claude.json when dest already exists (rebuild case)"
+else
+    fail "overwrote existing .claude.json on rebuild"
+fi
+
+# Case 3: source missing → dest should not be created
+exec_root rm /home/node/.claude/.claude.json /home/node/.claude-host/.claude.json
+seed
+if exec_node bash -c '[ ! -f /home/node/.claude/.claude.json ]'; then
+    pass "skips seeding when source is missing"
+else
+    fail "created .claude.json despite missing source"
+fi
 
 # ── Tool presence ─────────────────────────────────────────────────────────────
 
