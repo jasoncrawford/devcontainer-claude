@@ -1,0 +1,6 @@
+ignore:
+  - DL3007  # "Using latest is best avoided" — node:20 intentionally tracks LTS stream
+  - DL3008  # "Pin versions in apt-get install" — impractical for a devcontainer base
+  - DL3047  # "Avoid wget without progress bar" — used in external installer contexts
+  - DL4001  # "Either use Wget or Curl but not both" — wget for installers, curl for Claude
+  - DL4006  # "Set pipefail before pipe" — required by curl|bash and wget|sh installers

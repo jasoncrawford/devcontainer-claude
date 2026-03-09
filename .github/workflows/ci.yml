@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install hadolint
+        run: |
+          wget -qO /usr/local/bin/hadolint \
+            https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x /usr/local/bin/hadolint
+
+      - name: Run static tests
+        run: ./test-static.sh

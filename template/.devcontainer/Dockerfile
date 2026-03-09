@@ -6,6 +6,7 @@ ENV TZ="$TZ"
 ARG CLAUDE_CODE_CHANNEL=latest
 
 # Install basic development tools and iptables/ipset
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
   git \
@@ -37,7 +38,7 @@ ARG USERNAME=node
 # Persist bash history.
 RUN mkdir /commandhistory \
   && touch /commandhistory/.bash_history \
-  && chown -R $USERNAME /commandhistory
+  && chown -R "$USERNAME" /commandhistory
 
 # Set `DEVCONTAINER` environment variable to help with orientation
 ENV DEVCONTAINER=true
@@ -49,9 +50,10 @@ RUN mkdir -p /workspace /home/node/.claude && \
 WORKDIR /workspace
 
 ARG GIT_DELTA_VERSION=0.18.2
+# hadolint ignore=DL3047
 RUN ARCH=$(dpkg --print-architecture) && \
   wget "https://github.com/dandavison/delta/releases/download/${GIT_DELTA_VERSION}/git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
-  sudo dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
+  dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
 # Set up non-root user
@@ -70,6 +72,7 @@ ENV VISUAL=nano
 
 # Default powerline10k theme
 ARG ZSH_IN_DOCKER_VERSION=1.2.0
+# hadolint ignore=DL3047,DL4001
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v${ZSH_IN_DOCKER_VERSION}/zsh-in-docker.sh)" -- \
   -p git \
   -p fzf \
@@ -79,6 +82,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -x
 
 # Install Claude Code (native installer, auto-updates at runtime)
+# hadolint ignore=DL4006,DL4001
 RUN curl -fsSL https://claude.ai/install.sh | bash -s ${CLAUDE_CODE_CHANNEL}
 
 # Copy and set up firewall script
