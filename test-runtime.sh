@@ -69,7 +69,7 @@ else
 fi
 
 for tool in git gh jq delta ip6tables iptables ipset; do
-    if exec_root command -v "$tool" &>/dev/null; then
+    if exec_root which "$tool" &>/dev/null; then
         pass "$tool is installed"
     else
         fail "$tool is not installed"
@@ -111,9 +111,10 @@ for domain in "https://api.github.com/zen" "https://registry.npmjs.org/"; do
     fi
 done
 
-# Anthropic endpoint — expect HTTP response (4xx is fine, means firewall passed)
-if exec_root curl --connect-timeout 10 -sf -o /dev/null -w "%{http_code}" \
-        https://api.anthropic.com 2>/dev/null | grep -qE '^[0-9]+$'; then
+# Anthropic endpoint — any HTTP response (including 4xx) means firewall passed
+http_code=$(exec_root curl --connect-timeout 10 -s -o /dev/null -w "%{http_code}" \
+    https://api.anthropic.com 2>/dev/null || true)
+if [[ "$http_code" =~ ^[0-9]+$ ]] && [[ "$http_code" != "000" ]]; then
     pass "api.anthropic.com is reachable"
 else
     fail "api.anthropic.com should be reachable"
