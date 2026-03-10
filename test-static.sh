@@ -52,6 +52,13 @@ run "template/Dockerfile" \
     hadolint template/.devcontainer/Dockerfile
 
 echo ""
+echo "=== Feature validation ==="
+run "src/setup/devcontainer-feature.json is valid JSON" \
+    jq empty src/setup/devcontainer-feature.json
+run "src/setup/install.sh passes shellcheck" \
+    shellcheck src/setup/install.sh
+
+echo ""
 echo "=== Shell script linting (shellcheck) ==="
 run "template/init-firewall.sh" \
     shellcheck template/.devcontainer/init-firewall.sh
