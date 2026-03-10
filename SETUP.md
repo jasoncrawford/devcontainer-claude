@@ -1,93 +1,88 @@
 # Devcontainer Setup Instructions
 
-Instructions for setting up a Claude Code devcontainer in a new project using this template.
+Instructions for setting up a Claude Code devcontainer in a new project.
 
-## Steps
+## Prerequisites
 
-### 1. Copy the template
-
-Copy the `.devcontainer/` directory from this repo's `template/` folder into the root of the target project:
-
-```bash
-cp -r /path/to/devcontainer-claude/template/.devcontainer /path/to/target-project/.devcontainer
-```
-
-### 2. Update the project name
-
-In `.devcontainer/devcontainer.json`, update the `name` field to match the project:
-
-```json
-"name": "Your Project Name"
-```
-
-### 3. Add project-specific firewall domains
-
-In `.devcontainer/init-firewall.sh`, find the `PROJECT DOMAINS` comment and add any domains the project needs outbound access to. Common ones by stack:
-
-- **Supabase**: `your-project-ref.supabase.co`
-- **Vercel API**: `api.vercel.com`
-- **Stripe**: `api.stripe.com`
-- **Resend**: `api.resend.com`
-- **OpenAI**: `api.openai.com`
-- **Fly.io**: `api.fly.io`
-
-Example:
-```bash
-    # --- PROJECT DOMAINS ---
-    "your-project-ref.supabase.co" \
-    "api.stripe.com" \
-```
-
-### 4. Update environment variables
-
-In `.devcontainer/devcontainer.json`, review the `containerEnv` section. Remove tokens that don't apply and add any the project needs:
-
-```json
-"containerEnv": {
-  "NODE_OPTIONS": "--max-old-space-size=4096",
-  "CLAUDE_CONFIG_DIR": "/home/node/.claude",
-  "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
-  "GH_TOKEN": "${localEnv:GH_TOKEN}",
-  "VERCEL_TOKEN": "${localEnv:VERCEL_TOKEN}",
-  "SUPABASE_ACCESS_TOKEN": "${localEnv:SUPABASE_ACCESS_TOKEN}"
-}
-```
-
-Only include tokens that are actually set in the host environment and needed inside the container.
-
-### 5. Add project-specific VS Code extensions
-
-In `.devcontainer/devcontainer.json`, add any language or framework extensions under `customizations.vscode.extensions`. The template includes a baseline set (Claude Code, ESLint, Prettier, GitLens). Common additions:
-
-- **TypeScript/Next.js**: already covered by baseline
-- **Python**: `ms-python.python`
-- **Tailwind**: `bradlc.vscode-tailwindcss`
-- **Prisma**: `Prisma.prisma`
-
-### 6. Ensure host directories exist
-
-Run the setup script from this repo once before starting the container for the first time:
+Run this once on the host machine (creates required directories and files):
 
 ```bash
 ./host-setup.sh
 ```
 
-This creates the required directories and files. The critical one is `~/.claude/settings.json` — if it doesn't exist as a *file* before Docker starts, Docker will create a *directory* with that name, causing Claude to fail silently. The script also detects and reports this if it's already happened.
+## Steps
 
-## What the template provides
+### 1. Create `.devcontainer/devcontainer.json`
 
-- **Firewall** (`init-firewall.sh`): Restricts outbound traffic to an allowlist using iptables/ipset. GitHub IP ranges are fetched dynamically; other domains are resolved at startup. Runs as root via a sudoers rule.
-- **Persistent state**: Claude's state (`.claude/`) is stored in a named Docker volume per project, keyed to the devcontainer ID. It survives container restarts, but a rebuild (e.g. after changing `devcontainer.json`) generates a new ID and a new volume, orphaning the old one. To clean up orphaned volumes: `docker volume prune`.
-- **Shared config**: Skills, commands, settings, and projects are bind-mounted read-write from the host, so changes inside the container are reflected on the host and vice versa.
-- **Shell**: zsh with Powerlevel10k, fzf, and git plugins.
-- **Tools**: git, gh, jq, vim, nano, delta (git diff), and standard build tools.
+Copy and customize:
+
+```json
+{
+  "name": "Your Project Name",
+  "image": "ghcr.io/jasoncrawford/devcontainer-claude:latest",
+  "remoteUser": "node",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/jasoncrawford/devcontainer-claude/setup:1": {}
+  },
+  "containerEnv": {
+    "YOUR_PROJECT_TOKEN": "${localEnv:YOUR_PROJECT_TOKEN}"
+  },
+  "waitFor": "postStartCommand"
+}
+```
+
+- Change `name` to match your project.
+- In `containerEnv`, include only tokens that are set on the host and needed in the container. Remove `YOUR_PROJECT_TOKEN` if you have none. The feature already provides `GH_TOKEN` and `VERCEL_TOKEN`.
+- `remoteUser`, `workspaceMount`, `workspaceFolder`, and `waitFor` are the same for all projects — copy verbatim.
+
+### 2. Add project-specific firewall domains (if needed)
+
+Create `.devcontainer/firewall-extras.txt` with one domain per line:
+
+```
+# Supabase
+your-project-ref.supabase.co
+supabase.co
+supabase.com
+
+# Other services
+api.stripe.com
+```
+
+Omit this file if the project needs no extra domains beyond the defaults (GitHub, npm, Anthropic, VS Code).
+
+### 3. For projects needing extra system packages
+
+If the project needs tools that must be installed as root (e.g. Playwright system deps), add a short `.devcontainer/Dockerfile` that extends the base:
+
+```dockerfile
+FROM ghcr.io/jasoncrawford/devcontainer-claude:latest
+RUN npx -y playwright install-deps chromium
+```
+
+Then change `devcontainer.json` to use `build` instead of `image`:
+
+```json
+"build": {
+  "dockerfile": "Dockerfile"
+}
+```
+
+## What the feature provides
+
+Automatically, without any configuration in the project:
+
+- **Firewall** (`init-firewall.sh`): Restricts outbound traffic to an allowlist (GitHub, npm, Anthropic API, VS Code). Reads `.devcontainer/firewall-extras.txt` for project-specific domains.
+- **Mounts**: `.claude` volume (per project, keyed to devcontainerId), plus bind mounts for skills, commands, settings.json, projects, gitconfig, and `.claude-host`.
+- **Environment**: `NODE_OPTIONS`, `CLAUDE_CONFIG_DIR`, `GH_TOKEN`, `VERCEL_TOKEN`, `POWERLEVEL9K_DISABLE_GITSTATUS`.
+- **VS Code extensions**: Claude Code, ESLint, Prettier, GitLens.
+- **Lifecycle**: On create, runs `/usr/local/bin/post-create.sh` (seeds `.claude.json` from host, installs superpowers plugin). On start, runs `/usr/local/bin/post-start.sh` (runs the firewall script). Both scripts are baked into the base image.
+- **Capabilities**: `NET_ADMIN` and `NET_RAW` (required for iptables).
 
 ## Running Claude with skip-permissions
-
-Once the container is running, Claude Code can be launched with:
 
 ```bash
 claude --dangerously-skip-permissions
 ```
-
-The firewall ensures that even with permissions skipped, outbound network access is restricted to the allowlist.

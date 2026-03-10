@@ -128,7 +128,8 @@ chmod +x src/setup/install.sh
     "CLAUDE_CONFIG_DIR": "/home/node/.claude",
     "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
     "GH_TOKEN": "${localEnv:GH_TOKEN}",
-    "VERCEL_TOKEN": "${localEnv:VERCEL_TOKEN}"
+    "VERCEL_TOKEN": "${localEnv:VERCEL_TOKEN}",
+    "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
   },
   "customizations": {
     "vscode": {
@@ -157,8 +158,8 @@ chmod +x src/setup/install.sh
       }
     }
   },
-  "postCreateCommand": "claude plugin install superpowers@claude-plugins-official",
-  "postStartCommand": "cp -n /home/node/.claude-host/.claude.json /home/node/.claude/.claude.json 2>/dev/null; sudo /usr/local/bin/init-firewall.sh",
+  "postCreateCommand": "/usr/local/bin/post-create.sh",
+  "postStartCommand": "/usr/local/bin/post-start.sh",
   "waitFor": "postStartCommand"
 }
 ```
@@ -350,6 +351,8 @@ The static test should validate the new feature files.
 
 **Step 2: Add validation for the feature files**
 
+Note: `test-static.sh` already checks `post-create.sh` and `post-start.sh` (added in a prior commit). Add only the feature-specific checks.
+
 After the existing JSON validation block, add:
 ```bash
 echo "Checking feature JSON..."
@@ -465,7 +468,7 @@ Automatically, without any configuration in the project:
 - **Mounts**: `.claude` volume (per project, keyed to devcontainerId), plus bind mounts for skills, commands, settings.json, projects, gitconfig, and `.claude-host`.
 - **Environment**: `NODE_OPTIONS`, `CLAUDE_CONFIG_DIR`, `GH_TOKEN`, `VERCEL_TOKEN`, `POWERLEVEL9K_DISABLE_GITSTATUS`.
 - **VS Code extensions**: Claude Code, ESLint, Prettier, GitLens.
-- **Lifecycle**: Plugin install on create; firewall init and `.claude.json` copy on start.
+- **Lifecycle**: On create, runs `/usr/local/bin/post-create.sh` (seeds `.claude.json` from host, installs superpowers plugin). On start, runs `/usr/local/bin/post-start.sh` (runs the firewall script). Both scripts are baked into the base image.
 - **Capabilities**: `NET_ADMIN` and `NET_RAW` (required for iptables).
 
 ## Running Claude with skip-permissions
@@ -511,14 +514,11 @@ Each migration follows the same pattern: slim down `devcontainer.json`, delete `
   "features": {
     "ghcr.io/jasoncrawford/devcontainer-claude/setup:1": {}
   },
-  "containerEnv": {
-    "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
-  },
   "waitFor": "postStartCommand"
 }
 ```
 
-Note: `CLAUDE_CODE_OAUTH_TOKEN` is gh-agent-specific. `GH_TOKEN` is already provided by the feature.
+Note: gh-agent has no project-specific tokens — `GH_TOKEN` and `CLAUDE_CODE_OAUTH_TOKEN` are both provided by the feature.
 
 **Step 2: Create `firewall-extras.txt`**
 
@@ -714,12 +714,12 @@ Uses `build` (not `image`) because of the local Dockerfile.
   "features": {
     "ghcr.io/jasoncrawford/devcontainer-claude/setup:1": {}
   },
-  "postCreateCommand": "npm install && npx playwright install chromium && claude plugin install superpowers@claude-plugins-official",
+  "postCreateCommand": "npm install && npx playwright install chromium && /usr/local/bin/post-create.sh",
   "waitFor": "postStartCommand"
 }
 ```
 
-Note: `postCreateCommand` here overrides the one from the feature. It extends the base command by adding `npm install && npx playwright install chromium &&` before the plugin install. The feature's postCreateCommand will NOT run separately — the devcontainer spec merges lifecycle commands, but per-project commands take precedence. Keep the full command here.
+Note: `postCreateCommand` here overrides the one from the feature — the devcontainer spec takes the project's value over the feature's when both are present. This version prepends the npm/playwright steps then calls `post-create.sh` (which handles .claude.json seeding and plugin install). The ordering matters: npm install and playwright browser install can happen before seeding.
 
 **Step 3: Create `firewall-extras.txt`**
 
