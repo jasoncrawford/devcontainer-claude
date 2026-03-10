@@ -1,0 +1,89 @@
+{
+  "id": "setup",
+  "version": "1.0.0",
+  "name": "Claude Code Sandbox Setup",
+  "description": "Mounts, environment, firewall, and VS Code config for Claude Code devcontainers",
+  "capAdd": ["NET_ADMIN", "NET_RAW"],
+  "mounts": [
+    {
+      "source": "${containerWorkspaceFolderBasename}-bashhistory-${devcontainerId}",
+      "target": "/commandhistory",
+      "type": "volume"
+    },
+    {
+      "source": "${containerWorkspaceFolderBasename}-claude-state-${devcontainerId}",
+      "target": "/home/node/.claude",
+      "type": "volume"
+    },
+    {
+      "source": "${localEnv:HOME}/.claude/skills",
+      "target": "/home/node/.claude/skills",
+      "type": "bind"
+    },
+    {
+      "source": "${localEnv:HOME}/.claude/commands",
+      "target": "/home/node/.claude/commands",
+      "type": "bind"
+    },
+    {
+      "source": "${localEnv:HOME}/.claude/settings.json",
+      "target": "/home/node/.claude/settings.json",
+      "type": "bind"
+    },
+    {
+      "source": "${localEnv:HOME}/.claude/projects",
+      "target": "/home/node/.claude/projects",
+      "type": "bind"
+    },
+    {
+      "source": "${localEnv:HOME}/.gitconfig",
+      "target": "/home/node/.gitconfig",
+      "type": "bind",
+      "readonly": true
+    },
+    {
+      "source": "${localEnv:HOME}/.claude",
+      "target": "/home/node/.claude-host",
+      "type": "bind",
+      "readonly": true
+    }
+  ],
+  "containerEnv": {
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
+    "GH_TOKEN": "${localEnv:GH_TOKEN}",
+    "VERCEL_TOKEN": "${localEnv:VERCEL_TOKEN}",
+    "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          },
+          "zsh": {
+            "path": "zsh"
+          }
+        }
+      }
+    }
+  },
+  "postCreateCommand": "/usr/local/bin/post-create.sh",
+  "postStartCommand": "/usr/local/bin/post-start.sh",
+  "waitFor": "postStartCommand"
+}
