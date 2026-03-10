@@ -83,11 +83,6 @@ for domain in \
     "productionresultssa11.blob.core.windows.net" \
     "productionresultssa12.blob.core.windows.net" \
     ; do
-    # --- PROJECT DOMAINS ---
-    # Add your project-specific domains here, e.g.:
-    #   "your-project.supabase.co" \
-    #   "api.your-service.com" \
-
     echo "Resolving $domain..."
     ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
     if [ -z "$ips" ]; then
@@ -104,6 +99,32 @@ for domain in \
         ipset add allowed-domains "$ip" 2>/dev/null || true
     done < <(echo "$ips")
 done
+
+# Read project-specific domains from .devcontainer/firewall-extras.txt
+EXTRAS_FILE="/workspace/.devcontainer/firewall-extras.txt"
+if [ -f "$EXTRAS_FILE" ]; then
+    echo "Loading project-specific domains from $EXTRAS_FILE..."
+    while IFS= read -r domain || [ -n "$domain" ]; do
+        # Skip empty lines and comments
+        [[ -z "$domain" || "$domain" =~ ^# ]] && continue
+        echo "Resolving extra domain: $domain..."
+        ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
+        if [ -z "$ips" ]; then
+            echo "WARNING: Failed to resolve $domain (skipping)"
+            continue
+        fi
+        while read -r ip; do
+            if [[ ! "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+                echo "ERROR: Invalid IP from DNS for $domain: $ip"
+                exit 1
+            fi
+            echo "Adding $ip for $domain"
+            ipset add allowed-domains "$ip" 2>/dev/null || true
+        done < <(echo "$ips")
+    done < "$EXTRAS_FILE"
+else
+    echo "No firewall-extras.txt found, skipping project-specific domains"
+fi
 
 # Get host IP from default route
 HOST_IP=$(ip route | grep default | cut -d" " -f3)
