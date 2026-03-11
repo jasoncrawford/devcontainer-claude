@@ -58,6 +58,18 @@ run "src/setup/devcontainer-feature.json is valid JSON" \
 run "src/setup/install.sh passes shellcheck" \
     shellcheck src/setup/install.sh
 
+# Feature containerEnv values are injected as ENV instructions in Dockerfile.extended
+# at Docker build time. ${localEnv:...} substitutions are NOT resolved at that phase —
+# they're only resolved for devcontainer.json-level containerEnv at container creation.
+# Using ${localEnv:...} in a feature's containerEnv causes a Docker BuildKit error.
+localenv_hits=$(jq -r '.containerEnv | to_entries[].value' src/setup/devcontainer-feature.json \
+    | grep -c "\${localEnv:" || true)
+if [[ "$localenv_hits" -gt 0 ]]; then
+    fail "feature containerEnv has ${localenv_hits} \${localEnv:...} value(s) — not resolved at Docker build time"
+else
+    pass "feature containerEnv has no \${localEnv:...} values"
+fi
+
 echo ""
 echo "=== Shell script linting (shellcheck) ==="
 run "template/init-firewall.sh" \
