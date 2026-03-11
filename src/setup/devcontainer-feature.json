@@ -1,6 +1,6 @@
 {
   "id": "setup",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "Claude Code Sandbox Setup",
   "description": "Mounts, environment, firewall, and VS Code config for Claude Code devcontainers",
   "capAdd": ["NET_ADMIN", "NET_RAW"],
