@@ -27,14 +27,16 @@ Copy and customize:
     "ghcr.io/jasoncrawford/devcontainer-claude/setup:1": {}
   },
   "containerEnv": {
-    "YOUR_PROJECT_TOKEN": "${localEnv:YOUR_PROJECT_TOKEN}"
+    "GH_TOKEN": "${localEnv:GH_TOKEN}",
+    "VERCEL_TOKEN": "${localEnv:VERCEL_TOKEN}",
+    "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
   },
   "waitFor": "postStartCommand"
 }
 ```
 
 - Change `name` to match your project.
-- In `containerEnv`, include only tokens that are set on the host and needed in the container. Remove `YOUR_PROJECT_TOKEN` if you have none. The feature already provides `GH_TOKEN` and `VERCEL_TOKEN`.
+- The three `containerEnv` entries are required — they pass auth tokens from your host environment into the container in memory (no files). Add any project-specific tokens alongside them.
 - `remoteUser`, `workspaceMount`, `workspaceFolder`, and `waitFor` are the same for all projects — copy verbatim.
 
 ### 2. Add project-specific firewall domains (if needed)
@@ -76,7 +78,7 @@ Automatically, without any configuration in the project:
 
 - **Firewall** (`init-firewall.sh`): Restricts outbound traffic to an allowlist (GitHub, npm, Anthropic API, VS Code). Reads `.devcontainer/firewall-extras.txt` for project-specific domains.
 - **Mounts**: `.claude` volume (per project, keyed to devcontainerId), plus bind mounts for skills, commands, settings.json, projects, gitconfig, and `.claude-host`.
-- **Environment**: `NODE_OPTIONS`, `CLAUDE_CONFIG_DIR`, `GH_TOKEN`, `VERCEL_TOKEN`, `POWERLEVEL9K_DISABLE_GITSTATUS`.
+- **Environment**: `NODE_OPTIONS`, `CLAUDE_CONFIG_DIR`, `POWERLEVEL9K_DISABLE_GITSTATUS`. Auth tokens (`GH_TOKEN`, `VERCEL_TOKEN`, `CLAUDE_CODE_OAUTH_TOKEN`) must be set in each project's `containerEnv` — the feature cannot inject host env vars at Docker build time.
 - **VS Code extensions**: Claude Code, ESLint, Prettier, GitLens.
 - **Lifecycle**: On create, runs `/usr/local/bin/post-create.sh` (seeds `.claude.json` from host, installs superpowers plugin). On start, runs `/usr/local/bin/post-start.sh` (runs the firewall script). Both scripts are baked into the base image.
 - **Capabilities**: `NET_ADMIN` and `NET_RAW` (required for iptables).
