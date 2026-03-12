@@ -7,6 +7,12 @@ if [ -f /home/node/.claude-host/.claude.json ] && [ ! -f /home/node/.claude/.cla
     cp /home/node/.claude-host/.claude.json /home/node/.claude/.claude.json
 fi
 
+# Fix ownership of the node_modules volume so the node user can write to it.
+# Docker creates volumes owned by root; without this, npm ci fails with EACCES.
+if [ -d /workspace/node_modules ]; then
+    sudo chown node:node /workspace/node_modules
+fi
+
 # Remove empty plugins dir if present so the plugin installer can recreate it cleanly.
 # Fails silently if the dir doesn't exist or is non-empty (already installed) — both are fine.
 rmdir /home/node/.claude/plugins 2>/dev/null || true
