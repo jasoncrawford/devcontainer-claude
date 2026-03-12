@@ -70,6 +70,15 @@ else
     pass "feature containerEnv has no \${localEnv:...} values"
 fi
 
+# node_modules volume mount shadows the host's node_modules (darwin binaries) with a
+# linux-native volume, preventing platform mismatch errors inside the container.
+if jq -e '.mounts[] | select(.target == "/workspace/node_modules" and .type == "volume")' \
+    src/setup/devcontainer-feature.json &>/dev/null; then
+    pass "feature has node_modules volume mount"
+else
+    fail "feature is missing node_modules volume mount at /workspace/node_modules"
+fi
+
 echo ""
 echo "=== Shell script linting (shellcheck) ==="
 run "template/init-firewall.sh" \
