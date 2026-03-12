@@ -133,6 +133,61 @@ for tool in git gh jq delta ip6tables iptables ipset; do
     fi
 done
 
+# ── node_modules volume isolation ─────────────────────────────────────────────
+# Verifies that a named volume at /workspace/node_modules shadows broken host
+# node_modules (darwin binaries) and allows native modules to run inside the
+# Linux container after a fresh npm install.
+
+echo ""
+echo "=== node_modules volume isolation ==="
+
+NM_WORKSPACE=$(mktemp -d)
+NM_VOL="devcontainer-test-node-modules-$$"
+
+# Minimal package.json with esbuild — a native module that fails with wrong-platform binaries.
+cat > "$NM_WORKSPACE/package.json" << 'JSON'
+{"dependencies":{"esbuild":"*"}}
+JSON
+
+# Simulate darwin host node_modules: a fake esbuild that throws a platform error.
+mkdir -p "$NM_WORKSPACE/node_modules/esbuild/lib"
+cat > "$NM_WORKSPACE/node_modules/esbuild/package.json" << 'JSON'
+{"name":"esbuild","version":"0.0.0","main":"lib/main.js"}
+JSON
+cat > "$NM_WORKSPACE/node_modules/esbuild/lib/main.js" << 'JS'
+throw new Error("esbuild: darwin-arm64 binary — wrong platform for linux-x64")
+JS
+
+# Step 1: without the volume, the broken host node_modules should cause failure.
+if docker run --rm \
+    -v "$NM_WORKSPACE:/workspace" \
+    -w /workspace \
+    --user node \
+    "$IMAGE" \
+    node -e 'require("esbuild")' > /dev/null 2>&1; then
+    fail "broken host node_modules should have failed but did not"
+else
+    pass "broken host node_modules correctly fail without volume mount"
+fi
+
+# Step 2: with the volume shadowing and a fresh npm install inside the container,
+# esbuild (linux-x64) should load successfully.
+docker volume create "$NM_VOL" > /dev/null
+if docker run --rm \
+    -v "$NM_WORKSPACE:/workspace" \
+    -v "$NM_VOL:/workspace/node_modules" \
+    -w /workspace \
+    --user node \
+    "$IMAGE" \
+    bash -c "npm install --silent 2>/dev/null && node -e 'require(\"esbuild\")'" > /dev/null 2>&1; then
+    pass "esbuild loads after volume shadows broken host node_modules and npm install runs"
+else
+    fail "esbuild failed despite node_modules volume mount and npm install"
+fi
+
+docker volume rm "$NM_VOL" > /dev/null 2>&1 || true
+rm -rf "$NM_WORKSPACE"
+
 # ── Firewall setup ────────────────────────────────────────────────────────────
 
 echo ""
