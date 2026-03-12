@@ -85,6 +85,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 RUN curl -fsSL https://claude.ai/install.sh | bash -s ${CLAUDE_CODE_CHANNEL}
 
 # Install brunel (Claude Code agent shell)
+# hadolint ignore=DL3016
 RUN npm install -g github:jasoncrawford/brunel
 
 # Copy and set up scripts
