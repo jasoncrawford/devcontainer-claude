@@ -79,6 +79,19 @@ else
     fail "feature is missing node_modules volume mount at /workspace/node_modules"
 fi
 
+# Must use ${localWorkspaceFolderBasename} (resolves to project dir name, e.g. "brunel"),
+# NOT ${containerWorkspaceFolderBasename} (resolves to "workspace" for all projects,
+# causing every project to share one volume).
+nm_source=$(jq -r '.mounts[] | select(.target == "/workspace/node_modules") | .source' \
+    src/setup/devcontainer-feature.json)
+# shellcheck disable=SC2016
+# Single quotes intentional: checking for the literal string ${localWorkspaceFolderBasename}.
+if [[ "$nm_source" == *'${localWorkspaceFolderBasename}'* ]]; then
+    pass "node_modules mount uses \${localWorkspaceFolderBasename} (project-specific)"
+else
+    fail "node_modules mount source '$nm_source' should use \${localWorkspaceFolderBasename}, not \${containerWorkspaceFolderBasename}"
+fi
+
 echo ""
 echo "=== Shell script linting (shellcheck) ==="
 run "template/init-firewall.sh" \

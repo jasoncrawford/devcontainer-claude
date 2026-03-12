@@ -188,6 +188,39 @@ fi
 docker volume rm "$NM_VOL" > /dev/null 2>&1 || true
 rm -rf "$NM_WORKSPACE"
 
+# ── node_modules volume permissions ───────────────────────────────────────────
+# Docker creates volumes owned by root. Without a chown the node user gets
+# EACCES when npm ci tries to write. post-create.sh must fix this.
+
+echo ""
+echo "=== node_modules volume permissions ==="
+
+NM_PERM_VOL="devcontainer-test-nm-perms-$$"
+docker volume create "$NM_PERM_VOL" > /dev/null
+
+# Step 1: fresh volume is root-owned — node user should NOT be able to write.
+if docker run --rm \
+    -v "$NM_PERM_VOL:/workspace/node_modules" \
+    --user node \
+    "$IMAGE" \
+    bash -c "touch /workspace/node_modules/.write-test" > /dev/null 2>&1; then
+    fail "fresh volume should be root-owned and unwritable by node (chown is necessary)"
+else
+    pass "fresh volume is root-owned and unwritable by node (chown is necessary)"
+fi
+
+# Step 2: after chown (as run by post-create.sh), node user should be able to write.
+if docker run --rm \
+    -v "$NM_PERM_VOL:/workspace/node_modules" \
+    "$IMAGE" \
+    bash -c "chown node:node /workspace/node_modules && su node -s /bin/bash -c 'touch /workspace/node_modules/.write-test'" > /dev/null 2>&1; then
+    pass "node user can write to node_modules after chown"
+else
+    fail "node user still cannot write to node_modules after chown"
+fi
+
+docker volume rm "$NM_PERM_VOL" > /dev/null 2>&1 || true
+
 # ── Firewall setup ────────────────────────────────────────────────────────────
 
 echo ""
