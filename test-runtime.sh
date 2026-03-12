@@ -189,8 +189,10 @@ docker volume rm "$NM_VOL" > /dev/null 2>&1 || true
 rm -rf "$NM_WORKSPACE"
 
 # ── node_modules volume permissions ───────────────────────────────────────────
-# Docker creates volumes owned by root. Without a chown the node user gets
-# EACCES when npm ci tries to write. post-create.sh must fix this.
+# /workspace/node_modules is pre-created in the Dockerfile owned by node.
+# When Docker mounts a named volume over an existing image directory it
+# initialises the volume with that directory's ownership — so node can write
+# without any runtime chown.
 
 echo ""
 echo "=== node_modules volume permissions ==="
@@ -198,25 +200,16 @@ echo "=== node_modules volume permissions ==="
 NM_PERM_VOL="devcontainer-test-nm-perms-$$"
 docker volume create "$NM_PERM_VOL" > /dev/null
 
-# Step 1: fresh volume is root-owned — node user should NOT be able to write.
+# A fresh named volume mounted at /workspace/node_modules should be initialised
+# from the image directory (owned by node), so the node user can write directly.
 if docker run --rm \
     -v "$NM_PERM_VOL:/workspace/node_modules" \
     --user node \
     "$IMAGE" \
     bash -c "touch /workspace/node_modules/.write-test" > /dev/null 2>&1; then
-    fail "fresh volume should be root-owned and unwritable by node (chown is necessary)"
+    pass "node user can write to node_modules volume without chown (image-initialised ownership)"
 else
-    pass "fresh volume is root-owned and unwritable by node (chown is necessary)"
-fi
-
-# Step 2: after chown (as run by post-create.sh), node user should be able to write.
-if docker run --rm \
-    -v "$NM_PERM_VOL:/workspace/node_modules" \
-    "$IMAGE" \
-    bash -c "chown node:node /workspace/node_modules && su node -s /bin/bash -c 'touch /workspace/node_modules/.write-test'" > /dev/null 2>&1; then
-    pass "node user can write to node_modules after chown"
-else
-    fail "node user still cannot write to node_modules after chown"
+    fail "node user cannot write to node_modules volume — check /workspace/node_modules ownership in Dockerfile"
 fi
 
 docker volume rm "$NM_PERM_VOL" > /dev/null 2>&1 || true

@@ -43,7 +43,7 @@ RUN mkdir /commandhistory \
 ENV DEVCONTAINER=true
 
 # Create workspace and config directories and set permissions
-RUN mkdir -p /workspace /home/node/.claude/plugins && \
+RUN mkdir -p /workspace/node_modules /home/node/.claude/plugins && \
   chown -R node:node /workspace /home/node/.claude
 
 WORKDIR /workspace
