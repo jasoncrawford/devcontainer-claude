@@ -1,6 +1,6 @@
 {
   "id": "setup",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "name": "Claude Code Sandbox Setup",
   "description": "Mounts, environment, firewall, and VS Code config for Claude Code devcontainers",
   "capAdd": ["NET_ADMIN", "NET_RAW"],
@@ -46,6 +46,11 @@
       "target": "/home/node/.claude-host",
       "type": "bind",
       "readonly": true
+    },
+    {
+      "source": "${containerWorkspaceFolderBasename}-node-modules",
+      "target": "/workspace/node_modules",
+      "type": "volume"
     }
   ],
   "containerEnv": {
