@@ -93,6 +93,14 @@ else
 fi
 
 echo ""
+echo "=== Brunel installation ==="
+if grep -q "github:jasoncrawford/brunel" template/.devcontainer/Dockerfile; then
+    pass "Dockerfile installs brunel from GitHub"
+else
+    fail "Dockerfile does not install brunel (expected: npm install -g github:jasoncrawford/brunel)"
+fi
+
+echo ""
 echo "=== Shell script linting (shellcheck) ==="
 run "template/init-firewall.sh" \
     shellcheck template/.devcontainer/init-firewall.sh

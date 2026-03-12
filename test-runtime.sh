@@ -133,6 +133,12 @@ for tool in git gh jq delta ip6tables iptables ipset; do
     fi
 done
 
+if exec_node which brunel &>/dev/null; then
+    pass "brunel is installed"
+else
+    fail "brunel is not installed"
+fi
+
 # ── node_modules volume isolation ─────────────────────────────────────────────
 # Verifies that a named volume at /workspace/node_modules shadows broken host
 # node_modules (darwin binaries) and allows native modules to run inside the
