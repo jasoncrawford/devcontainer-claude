@@ -54,7 +54,9 @@
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
     "CLAUDE_CONFIG_DIR": "/home/node/.claude",
-    "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
+  },
+  "remoteEnv": {
     "GH_TOKEN": "${localEnv:GH_TOKEN}",
     "VERCEL_TOKEN": "${localEnv:VERCEL_TOKEN}",
     "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"
