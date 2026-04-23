@@ -84,9 +84,13 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 # hadolint ignore=DL4006,DL4001
 RUN curl -fsSL https://claude.ai/install.sh | bash -s ${CLAUDE_CODE_CHANNEL}
 
-# Install brunel (Claude Code agent shell)
+# Install brunel (Claude Code agent shell).
+# Install from a GitHub archive tarball URL rather than the `github:jasoncrawford/brunel`
+# shorthand: the shorthand uses npm's clone+pack+nested-install path, which races with
+# itself on packages with many optional native-binary deps and fails with TAR_ENTRY_ERROR.
+# The archive URL uses npm's standard tarball install path, which works reliably.
 # hadolint ignore=DL3016
-RUN npm install -g github:jasoncrawford/brunel
+RUN npm install -g https://github.com/jasoncrawford/brunel/archive/refs/heads/main.tar.gz
 
 # Copy and set up scripts
 COPY init-firewall.sh post-create.sh post-start.sh claude-sdk-fix-libc.sh /usr/local/bin/

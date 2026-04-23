@@ -94,10 +94,10 @@ fi
 
 echo ""
 echo "=== Brunel installation ==="
-if grep -q "github:jasoncrawford/brunel" template/.devcontainer/Dockerfile; then
-    pass "Dockerfile installs brunel from GitHub"
+if grep -q "jasoncrawford/brunel/archive/refs/heads/main.tar.gz" template/.devcontainer/Dockerfile; then
+    pass "Dockerfile installs brunel from GitHub archive tarball URL"
 else
-    fail "Dockerfile does not install brunel (expected: npm install -g github:jasoncrawford/brunel)"
+    fail "Dockerfile does not install brunel (expected: install from brunel archive tarball URL)"
 fi
 
 echo ""
