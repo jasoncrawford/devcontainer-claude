@@ -62,7 +62,7 @@ exec_node() { docker exec --user node "$CONTAINER" "$@"; }
 
 echo ""
 echo "=== Script presence ==="
-for script in init-firewall.sh post-create.sh post-start.sh; do
+for script in init-firewall.sh post-create.sh post-start.sh claude-sdk-fix-libc.sh; do
     if exec_root test -x "/usr/local/bin/$script"; then
         pass "$script is present and executable"
     else

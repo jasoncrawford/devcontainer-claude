@@ -41,7 +41,7 @@ run "template/devcontainer.json is valid JSON" \
 echo ""
 echo "=== Script consistency ==="
 # Verify scripts referenced by devcontainer.json exist in the template.
-for script in post-create.sh post-start.sh; do
+for script in post-create.sh post-start.sh claude-sdk-fix-libc.sh; do
     run "$script exists in template" \
         test -f "template/.devcontainer/$script"
 done
@@ -108,6 +108,8 @@ run "template/post-create.sh" \
     shellcheck template/.devcontainer/post-create.sh
 run "template/post-start.sh" \
     shellcheck template/.devcontainer/post-start.sh
+run "template/claude-sdk-fix-libc.sh" \
+    shellcheck template/.devcontainer/claude-sdk-fix-libc.sh
 run "host-setup.sh" \
     shellcheck host-setup.sh
 run "test-static.sh" \
