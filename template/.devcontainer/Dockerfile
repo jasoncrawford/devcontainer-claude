@@ -89,9 +89,9 @@ RUN curl -fsSL https://claude.ai/install.sh | bash -s ${CLAUDE_CODE_CHANNEL}
 RUN npm install -g github:jasoncrawford/brunel
 
 # Copy and set up scripts
-COPY init-firewall.sh post-create.sh post-start.sh /usr/local/bin/
+COPY init-firewall.sh post-create.sh post-start.sh claude-sdk-fix-libc.sh /usr/local/bin/
 USER root
-RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/post-create.sh /usr/local/bin/post-start.sh && \
+RUN chmod +x /usr/local/bin/init-firewall.sh /usr/local/bin/post-create.sh /usr/local/bin/post-start.sh /usr/local/bin/claude-sdk-fix-libc.sh && \
   echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
   chmod 0440 /etc/sudoers.d/node-firewall && \
   chown -R node:node /home/node/.claude
