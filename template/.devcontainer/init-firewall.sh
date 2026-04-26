@@ -82,6 +82,7 @@ for domain in \
     "productionresultssa10.blob.core.windows.net" \
     "productionresultssa11.blob.core.windows.net" \
     "productionresultssa12.blob.core.windows.net" \
+    "brunel-production.up.railway.app" \
     ; do
     echo "Resolving $domain..."
     ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
