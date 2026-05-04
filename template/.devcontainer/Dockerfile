@@ -5,7 +5,15 @@ ENV TZ="$TZ"
 
 ARG CLAUDE_CODE_CHANNEL=latest
 
-# Install basic development tools and iptables/ipset
+# Install basic development tools and iptables/ipset.
+#
+# The libnss3..libasound2 group is the system-library set required by
+# headless Chromium (used by Playwright/Puppeteer for browser automation,
+# visual regression testing, etc.). Playwright's `playwright install
+# chromium` only downloads the browser binary; it cannot install these
+# system .so files because the node user has no apt access at runtime,
+# and the firewall blocks deb.debian.org anyway. Baking them into the
+# image lets `playwright install chromium` produce a working browser.
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
@@ -26,6 +34,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   jq \
   nano \
   vim \
+  libnss3 \
+  libnspr4 \
+  libdbus-1-3 \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libatspi2.0-0 \
+  libcups2 \
+  libxkbcommon0 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxfixes3 \
+  libxrandr2 \
+  libgbm1 \
+  libcairo2 \
+  libpango-1.0-0 \
+  libasound2 \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Ensure default node user has access to /usr/local/share
