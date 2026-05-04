@@ -14,6 +14,16 @@ iptables -t mangle -F
 iptables -t mangle -X
 ipset destroy allowed-domains 2>/dev/null || true
 
+# Reset default policies to ACCEPT. iptables -F does NOT reset policies, so
+# without this a re-run from an already-locked-down state would inherit the
+# previous DROP policy and silently block the curl to api.github.com below.
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+ip6tables -P INPUT ACCEPT
+ip6tables -P FORWARD ACCEPT
+ip6tables -P OUTPUT ACCEPT
+
 # 2. Selectively restore ONLY internal Docker DNS resolution
 if [ -n "$DOCKER_DNS_RULES" ]; then
     echo "Restoring Docker DNS rules..."
@@ -38,7 +48,7 @@ ipset create allowed-domains hash:net
 
 # Fetch GitHub meta information and aggregate + add their IP ranges
 echo "Fetching GitHub IP ranges..."
-gh_ranges=$(curl -s https://api.github.com/meta)
+gh_ranges=$(curl -s --connect-timeout 5 --max-time 30 https://api.github.com/meta)
 if [ -z "$gh_ranges" ]; then
     echo "ERROR: Failed to fetch GitHub IP ranges"
     exit 1
