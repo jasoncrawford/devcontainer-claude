@@ -92,6 +92,7 @@ for domain in \
     "productionresultssa10.blob.core.windows.net" \
     "productionresultssa11.blob.core.windows.net" \
     "productionresultssa12.blob.core.windows.net" \
+    "brunel.dev" \
     "brunel-production.up.railway.app" \
     ; do
     echo "Resolving $domain..."
